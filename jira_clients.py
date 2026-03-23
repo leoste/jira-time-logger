@@ -1,9 +1,8 @@
 # jira_clients.py
 
 import base64
-from typing import Optional
-
 import requests
+import urllib3
 
 from models import IssueInfo
 
@@ -21,9 +20,14 @@ class MultipleIssuesFoundError(JiraClientError):
 
 
 class PatJiraClient:
-    def __init__(self, base_url: str, token: str):
+    def __init__(self, base_url: str, token: str, verify_ssl: bool = True):
         self.base_url = base_url.rstrip("/")
         self.token = token
+        self.verify_ssl = verify_ssl
+
+        if not self.verify_ssl:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -33,11 +37,27 @@ class PatJiraClient:
             }
         )
 
+    def ping(self) -> None:
+        url = f"{self.base_url}/rest/api/2/myself"
+
+        try:
+            response = self.session.get(url, timeout=15, verify=self.verify_ssl)
+        except requests.RequestException as e:
+            raise JiraClientError(
+                f"Network error while connecting to {self.base_url}: {e}"
+            )
+
+        if response.status_code != 200:
+            raise JiraClientError(
+                f"Connection/auth check failed for {self.base_url}. "
+                f"HTTP {response.status_code}: {response.text}"
+            )
+
     def find_issue_by_number(self, issue_key: str) -> IssueInfo:
         url = f"{self.base_url}/rest/api/2/issue/{issue_key}"
 
         try:
-            response = self.session.get(url, timeout=15)
+            response = self.session.get(url, timeout=15, verify=self.verify_ssl)
         except requests.RequestException as e:
             raise JiraClientError(
                 f"Network error while finding issue '{issue_key}' in {self.base_url}: {e}"
@@ -70,7 +90,9 @@ class PatJiraClient:
         }
 
         try:
-            response = self.session.post(url, json=payload, timeout=15)
+            response = self.session.post(
+                url, json=payload, timeout=15, verify=self.verify_ssl
+            )
         except requests.RequestException as e:
             raise JiraClientError(
                 f"Network error while creating worklog on '{issue.key}' in {self.base_url}: {e}"
@@ -84,11 +106,22 @@ class PatJiraClient:
 
 
 class ApiJiraClient:
-    def __init__(self, base_url: str, email: str, token: str, project_key: str):
+    def __init__(
+        self,
+        base_url: str,
+        email: str,
+        token: str,
+        project_key: str,
+        verify_ssl: bool = True,
+    ):
         self.base_url = base_url.rstrip("/")
         self.email = email
         self.token = token
         self.project_key = project_key
+        self.verify_ssl = verify_ssl
+
+        if not self.verify_ssl:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         auth_bytes = f"{self.email}:{self.token}".encode("utf-8")
         auth_b64 = base64.b64encode(auth_bytes).decode("utf-8")
@@ -102,20 +135,37 @@ class ApiJiraClient:
             }
         )
 
+    def ping(self) -> None:
+        url = f"{self.base_url}/rest/api/3/myself"
+
+        try:
+            response = self.session.get(url, timeout=15, verify=self.verify_ssl)
+        except requests.RequestException as e:
+            raise JiraClientError(
+                f"Network error while connecting to {self.base_url}: {e}"
+            )
+
+        if response.status_code != 200:
+            raise JiraClientError(
+                f"Connection/auth check failed for {self.base_url}. "
+                f"HTTP {response.status_code}: {response.text}"
+            )
+
     def find_issue_by_name_containing(self, text: str) -> IssueInfo:
-        # Project restriction + exact text included in summary
         jql = f'project = "{self.project_key}" AND summary ~ "\\"{text}\\""'
 
-        url = f"{self.base_url}/rest/api/3/search"
+        url = f"{self.base_url}/rest/api/3/search/jql"
 
         params = {
             "jql": jql,
-            "maxResults": 2,  # enough to detect 0 / 1 / multiple
+            "maxResults": 2,
             "fields": "summary",
         }
 
         try:
-            response = self.session.get(url, params=params, timeout=15)
+            response = self.session.get(
+                url, params=params, timeout=15, verify=self.verify_ssl
+            )
         except requests.RequestException as e:
             raise JiraClientError(
                 f"Network error while searching for '{text}' in {self.base_url}: {e}"
@@ -153,8 +203,6 @@ class ApiJiraClient:
     def create_time_log(self, issue: IssueInfo, hours: float, comment: str) -> None:
         url = f"{self.base_url}/rest/api/3/issue/{issue.key}/worklog"
 
-        # Jira Cloud often accepts string comment for worklog,
-        # but ADF is more robust / future-proof.
         payload = {
             "comment": {
                 "type": "doc",
@@ -175,7 +223,9 @@ class ApiJiraClient:
         }
 
         try:
-            response = self.session.post(url, json=payload, timeout=15)
+            response = self.session.post(
+                url, json=payload, timeout=15, verify=self.verify_ssl
+            )
         except requests.RequestException as e:
             raise JiraClientError(
                 f"Network error while creating worklog on '{issue.key}' in {self.base_url}: {e}"
