@@ -1,0 +1,11 @@
+# config.py
+
+# Original Jira (self-hosted, PAT)
+ORIGINAL_JIRA_URL = "jira.company.com"
+ORIGINAL_JIRA_TOKEN = ""
+
+# Duplicate Jira (Atlassian Cloud, API token + email)
+DUPLICATE_JIRA_URL = "company.atlassian.net"
+DUPLICATE_JIRA_EMAIL = "name@company.com"
+DUPLICATE_JIRA_TOKEN = ""
+DUPLICATE_JIRA_PROJECT_KEY = "ABC"
