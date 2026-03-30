@@ -1,6 +1,8 @@
 # jira_clients.py
 
 import base64
+from typing import Optional
+
 import requests
 import urllib3
 
@@ -81,13 +83,22 @@ class PatJiraClient:
 
         return IssueInfo(key=key, title=title, url=issue_url)
 
-    def create_time_log(self, issue: IssueInfo, hours: float, comment: str) -> None:
+    def create_time_log(
+        self,
+        issue: IssueInfo,
+        hours: float,
+        comment: str,
+        started: Optional[str] = None,
+    ) -> None:
         url = f"{self.base_url}/rest/api/2/issue/{issue.key}/worklog"
 
         payload = {
             "comment": comment,
             "timeSpent": f"{hours}h",
         }
+
+        if started is not None:
+            payload["started"] = started
 
         try:
             response = self.session.post(
@@ -200,7 +211,13 @@ class ApiJiraClient:
 
         return IssueInfo(key=key, title=title, url=issue_url)
 
-    def create_time_log(self, issue: IssueInfo, hours: float, comment: str) -> None:
+    def create_time_log(
+        self,
+        issue: IssueInfo,
+        hours: float,
+        comment: str,
+        started: Optional[str] = None,
+    ) -> None:
         url = f"{self.base_url}/rest/api/3/issue/{issue.key}/worklog"
 
         payload = {
@@ -221,6 +238,9 @@ class ApiJiraClient:
             },
             "timeSpent": f"{hours}h",
         }
+
+        if started is not None:
+            payload["started"] = started
 
         try:
             response = self.session.post(

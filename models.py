@@ -1,7 +1,7 @@
 # models.py
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -22,11 +22,11 @@ class PlannedIssueWorklogs:
     issue: IssueInfo
     time_logs: List[TimeLogEntry]
 
-    def commit(self, client) -> None:
+    def commit(self, client, started: Optional[str] = None) -> None:
         import time
 
         for entry in self.time_logs:
-            client.create_time_log(self.issue, entry.hours, entry.comment)
+            client.create_time_log(self.issue, entry.hours, entry.comment, started=started)
             print(
                 f"[OK] {client.base_url} -> {self.issue.key} | {entry.hours}h | {entry.comment}"
             )
