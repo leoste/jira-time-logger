@@ -1,85 +1,74 @@
 # parser.py
 
+from datetime import datetime
 from typing import Dict, List
+
 from models import TimeLogEntry
 
 
-def parse_input(text: str) -> Dict[str, List[TimeLogEntry]]:
-    """
-    Expected format:
-
-    ISSUE-123
-    0.5 did something
-    3 did another thing
-
-    ISSUE-456
-    2 more work
-    """
-
+def parse_input(text: str) -> Dict[str, Dict[str, List[TimeLogEntry]]]:
     lines = text.splitlines()
-    result: Dict[str, List[TimeLogEntry]] = {}
 
-    current_issue = None
-    current_logs: List[TimeLogEntry] = []
+    result: Dict[str, Dict[str, List[TimeLogEntry]]] = {}
 
-    def flush_current():
-        nonlocal current_issue, current_logs
-        if current_issue is not None:
-            if not current_logs:
-                raise ValueError(f"Issue '{current_issue}' has no time log entries.")
-            result[current_issue] = current_logs
-            current_issue = None
-            current_logs = []
+    current_date: str | None = None
+    current_issue: str | None = None
 
     for raw_line in lines:
         line = raw_line.strip()
 
-        # Empty line separates blocks
         if line == "":
-            flush_current()
             continue
 
-        # If no current issue, this line must be the issue key
-        if current_issue is None:
-            current_issue = line
-            if current_issue in result:
-                raise ValueError(f"Duplicate issue block found for '{current_issue}'.")
-            continue
-
-        # Otherwise this line must be a timelog line: "<hours> <comment>"
-        parts = line.split(maxsplit=1)
-        if len(parts) < 2:
-            raise ValueError(
-                f"Invalid timelog line under issue '{current_issue}': '{line}'. "
-                f"Expected format: '<hours> <comment>'"
-            )
-
-        hours_str, comment = parts
-
+        # Try parse as date
         try:
-            hours = float(hours_str)
+            dt = datetime.strptime(line, "%d.%m.%Y")
+            current_date = line
+            current_issue = None
+
+            if current_date not in result:
+                result[current_date] = {}
+
+            continue
         except ValueError:
-            raise ValueError(
-                f"Invalid hour value under issue '{current_issue}': '{hours_str}'"
-            )
+            pass
 
-        if hours <= 0:
-            raise ValueError(
-                f"Hours must be greater than 0 under issue '{current_issue}': '{hours_str}'"
-            )
+        # If no date yet → error
+        if current_date is None:
+            raise ValueError("Issue or timelog found before any date.")
 
-        comment = comment.strip()
-        if not comment:
-            raise ValueError(
-                f"Comment cannot be empty under issue '{current_issue}'."
-            )
+        # Try parse as timelog line
+        parts = line.split(maxsplit=1)
 
-        current_logs.append(TimeLogEntry(hours=hours, comment=comment))
+        if len(parts) >= 1:
+            try:
+                hours = float(parts[0])
 
-    # Flush final block if present
-    flush_current()
+                if current_issue is None:
+                    raise ValueError("Timelog found before any issue.")
 
-    if not result:
-        raise ValueError("No valid issue blocks found in input.")
+                comment = parts[1] if len(parts) > 1 else ""
+
+                issue_map = result[current_date]
+
+                if current_issue not in issue_map:
+                    issue_map[current_issue] = []
+
+                issue_map[current_issue].append(
+                    TimeLogEntry(hours=hours, comment=comment)
+                )
+
+                continue
+
+            except ValueError:
+                pass
+
+        # Otherwise it's an issue line
+        current_issue = line
+
+        issue_map = result[current_date]
+
+        if current_issue not in issue_map:
+            issue_map[current_issue] = []
 
     return result

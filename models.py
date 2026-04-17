@@ -1,7 +1,7 @@
 # models.py
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 
 @dataclass
@@ -22,12 +22,26 @@ class PlannedIssueWorklogs:
     issue: IssueInfo
     time_logs: List[TimeLogEntry]
 
-    def commit(self, client, started: Optional[str] = None) -> None:
+
+@dataclass
+class PlannedDayWorklogs:
+    date_str: str  # dd.mm.yyyy
+    started: str   # Jira timestamp
+    issues: List[PlannedIssueWorklogs]
+
+    def commit(self, client) -> None:
         import time
 
-        for entry in self.time_logs:
-            client.create_time_log(self.issue, entry.hours, entry.comment, started=started)
-            print(
-                f"[OK] {client.base_url} -> {self.issue.key} | {entry.hours}h | {entry.comment}"
-            )
-            time.sleep(1)
+        for planned_issue in self.issues:
+            for entry in planned_issue.time_logs:
+                client.create_time_log(
+                    planned_issue.issue,
+                    entry.hours,
+                    entry.comment,
+                    started=self.started,
+                )
+                print(
+                    f"[OK] {client.base_url} | {self.date_str} | "
+                    f"{planned_issue.issue.key} | {entry.hours}h | {entry.comment}"
+                )
+                time.sleep(1)
