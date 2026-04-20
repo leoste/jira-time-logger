@@ -1,18 +1,28 @@
 # parser.py
 
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from models import TimeLogEntry
 
 
-def parse_input(text: str) -> Dict[str, Dict[str, List[TimeLogEntry]]]:
+def parse_issue_line(line: str) -> Tuple[str, bool]:
+    if line.endswith("(employer)"):
+        issue = line[: -len("(employer)")].strip()
+        return issue, True
+    return line, False
+
+
+def parse_input(
+    text: str,
+) -> Dict[str, Dict[str, Tuple[List[TimeLogEntry], bool]]]:
     lines = text.splitlines()
 
-    result: Dict[str, Dict[str, List[TimeLogEntry]]] = {}
+    result: Dict[str, Dict[str, Tuple[List[TimeLogEntry], bool]]] = {}
 
     current_date: str | None = None
     current_issue: str | None = None
+    current_employer_only: bool = False
 
     for raw_line in lines:
         line = raw_line.strip()
@@ -20,9 +30,9 @@ def parse_input(text: str) -> Dict[str, Dict[str, List[TimeLogEntry]]]:
         if line == "":
             continue
 
-        # Try parse as date
+        # Date
         try:
-            dt = datetime.strptime(line, "%d.%m.%Y")
+            datetime.strptime(line, "%d.%m.%Y")
             current_date = line
             current_issue = None
 
@@ -33,11 +43,10 @@ def parse_input(text: str) -> Dict[str, Dict[str, List[TimeLogEntry]]]:
         except ValueError:
             pass
 
-        # If no date yet → error
         if current_date is None:
             raise ValueError("Issue or timelog found before any date.")
 
-        # Try parse as timelog line
+        # Timelog
         parts = line.split(maxsplit=1)
 
         if len(parts) >= 1:
@@ -51,24 +60,28 @@ def parse_input(text: str) -> Dict[str, Dict[str, List[TimeLogEntry]]]:
 
                 issue_map = result[current_date]
 
-                if current_issue not in issue_map:
-                    issue_map[current_issue] = []
+                logs, employer_only = issue_map[current_issue]
 
-                issue_map[current_issue].append(
-                    TimeLogEntry(hours=hours, comment=comment)
-                )
+                logs.append(TimeLogEntry(hours=hours, comment=comment))
 
                 continue
 
             except ValueError:
                 pass
 
-        # Otherwise it's an issue line
-        current_issue = line
+        # Issue line
+        issue_key, employer_only = parse_issue_line(line)
+
+        current_issue = issue_key
+        current_employer_only = employer_only
 
         issue_map = result[current_date]
 
         if current_issue not in issue_map:
-            issue_map[current_issue] = []
+            issue_map[current_issue] = ([], employer_only)
+        else:
+            # merge case → keep employer_only True if ever set
+            logs, existing_flag = issue_map[current_issue]
+            issue_map[current_issue] = (logs, existing_flag or employer_only)
 
     return result

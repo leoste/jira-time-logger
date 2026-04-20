@@ -48,7 +48,8 @@ def print_plans(title: str, days: list[PlannedDayWorklogs], client_url: str) -> 
         print(f"\nDate: {day.date_str}\n")
 
         for plan in day.issues:
-            print(f"{plan.issue.key} - {plan.issue.title}")
+            suffix = " (employer)" if plan.employer_only else ""
+            print(f"{plan.issue.key}{suffix} - {plan.issue.title}")
             print(f"URL: {plan.issue.url}")
             for entry in plan.time_logs:
                 print(f"{entry.hours} - {entry.comment}")
@@ -58,14 +59,13 @@ def print_plans(title: str, days: list[PlannedDayWorklogs], client_url: str) -> 
 
 
 def main():
-    # Create clients
-    original = PatJiraClient(
+    customer = PatJiraClient(
         base_url=ORIGINAL_JIRA_URL,
         token=ORIGINAL_JIRA_TOKEN,
         verify_ssl=ORIGINAL_JIRA_VERIFY_SSL,
     )
 
-    duplicate = ApiJiraClient(
+    employer = ApiJiraClient(
         base_url=DUPLICATE_JIRA_URL,
         email=DUPLICATE_JIRA_EMAIL,
         token=DUPLICATE_JIRA_TOKEN,
@@ -73,21 +73,19 @@ def main():
         verify_ssl=DUPLICATE_JIRA_VERIFY_SSL,
     )
 
-    # Ping
     print("Checking Jira connections...")
 
     try:
-        original.ping()
-        print(f"[OK] Original Jira reachable: {original.base_url}")
+        customer.ping()
+        print(f"[OK] Customer Jira reachable: {customer.base_url}")
 
-        duplicate.ping()
-        print(f"[OK] Duplicate Jira reachable: {duplicate.base_url}")
+        employer.ping()
+        print(f"[OK] Employer Jira reachable: {employer.base_url}")
 
     except JiraClientError as e:
         print(f"\n[CONNECTION ERROR] {e}")
         return
 
-    # Parse input
     while True:
         text = read_multiline_input()
 
@@ -97,41 +95,51 @@ def main():
         except ValueError as e:
             print(f"\n[PARSE ERROR] {e}\nTry again.\n")
 
-    original_days: list[PlannedDayWorklogs] = []
-    duplicate_days: list[PlannedDayWorklogs] = []
+    customer_days: list[PlannedDayWorklogs] = []
+    employer_days: list[PlannedDayWorklogs] = []
 
-    # Resolve issues
     try:
         for date_str, issues in parsed.items():
             started = to_jira_started(date_str)
 
-            original_issue_plans: list[PlannedIssueWorklogs] = []
-            duplicate_issue_plans: list[PlannedIssueWorklogs] = []
+            customer_issue_plans = []
+            employer_issue_plans = []
 
-            for issue_key, time_logs in issues.items():
-                original_issue = original.find_issue_by_number(issue_key)
-                duplicate_issue = duplicate.find_issue_by_name_containing(issue_key)
+            for issue_key, (time_logs, employer_only) in issues.items():
+                employer_issue = employer.find_issue_by_name_containing(issue_key)
 
-                original_issue_plans.append(
-                    PlannedIssueWorklogs(issue=original_issue, time_logs=time_logs)
+                employer_issue_plans.append(
+                    PlannedIssueWorklogs(
+                        issue=employer_issue,
+                        time_logs=time_logs,
+                        employer_only=employer_only,
+                    )
                 )
-                duplicate_issue_plans.append(
-                    PlannedIssueWorklogs(issue=duplicate_issue, time_logs=time_logs)
-                )
 
-            original_days.append(
+                if not employer_only:
+                    customer_issue = customer.find_issue_by_number(issue_key)
+
+                    customer_issue_plans.append(
+                        PlannedIssueWorklogs(
+                            issue=customer_issue,
+                            time_logs=time_logs,
+                            employer_only=False,
+                        )
+                    )
+
+            customer_days.append(
                 PlannedDayWorklogs(
                     date_str=date_str,
                     started=started,
-                    issues=original_issue_plans,
+                    issues=customer_issue_plans,
                 )
             )
 
-            duplicate_days.append(
+            employer_days.append(
                 PlannedDayWorklogs(
                     date_str=date_str,
                     started=started,
-                    issues=duplicate_issue_plans,
+                    issues=employer_issue_plans,
                 )
             )
 
@@ -139,25 +147,22 @@ def main():
         print(f"\n[LOOKUP ERROR] {e}")
         return
 
-    # Preview
-    print_plans("ORIGINAL JIRA", original_days, original.base_url)
-    print_plans("DUPLICATE JIRA", duplicate_days, duplicate.base_url)
+    print_plans("CUSTOMER JIRA", customer_days, customer.base_url)
+    print_plans("EMPLOYER JIRA", employer_days, employer.base_url)
 
-    # Confirm
     answer = input('Type "yes" to commit: ').strip()
     if answer != "yes":
         print("Cancelled.")
         return
 
-    # Commit
     try:
-        print("\nCommitting to ORIGINAL JIRA...\n")
-        for day in original_days:
-            day.commit(original)
+        print("\nCommitting to CUSTOMER JIRA...\n")
+        for day in customer_days:
+            day.commit(customer, is_customer=True)
 
-        print("\nCommitting to DUPLICATE JIRA...\n")
-        for day in duplicate_days:
-            day.commit(duplicate)
+        print("\nCommitting to EMPLOYER JIRA...\n")
+        for day in employer_days:
+            day.commit(employer, is_customer=False)
 
     except JiraClientError as e:
         print(f"\n[COMMIT ERROR] {e}")

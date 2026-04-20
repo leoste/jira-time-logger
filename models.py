@@ -21,18 +21,22 @@ class IssueInfo:
 class PlannedIssueWorklogs:
     issue: IssueInfo
     time_logs: List[TimeLogEntry]
+    employer_only: bool
 
 
 @dataclass
 class PlannedDayWorklogs:
-    date_str: str  # dd.mm.yyyy
-    started: str   # Jira timestamp
+    date_str: str
+    started: str
     issues: List[PlannedIssueWorklogs]
 
-    def commit(self, client) -> None:
+    def commit(self, client, is_customer: bool) -> None:
         import time
 
         for planned_issue in self.issues:
+            if is_customer and planned_issue.employer_only:
+                continue
+
             for entry in planned_issue.time_logs:
                 client.create_time_log(
                     planned_issue.issue,
@@ -40,8 +44,10 @@ class PlannedDayWorklogs:
                     entry.comment,
                     started=self.started,
                 )
+
                 print(
                     f"[OK] {client.base_url} | {self.date_str} | "
                     f"{planned_issue.issue.key} | {entry.hours}h | {entry.comment}"
                 )
+
                 time.sleep(1)
