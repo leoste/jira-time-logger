@@ -106,7 +106,12 @@ def main():
             employer_issue_plans = []
 
             for issue_key, (time_logs, employer_only) in issues.items():
-                employer_issue = employer.find_issue_by_name_containing(issue_key)
+
+                # EMPLOYER lookup
+                if employer_only:
+                    employer_issue = employer.find_issue_by_number(issue_key)
+                else:
+                    employer_issue = employer.find_issue_by_name_containing(issue_key)
 
                 employer_issue_plans.append(
                     PlannedIssueWorklogs(
@@ -116,6 +121,7 @@ def main():
                     )
                 )
 
+                # CUSTOMER lookup
                 if not employer_only:
                     customer_issue = customer.find_issue_by_number(issue_key)
 

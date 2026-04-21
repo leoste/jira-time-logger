@@ -256,3 +256,32 @@ class ApiJiraClient:
                 f"Failed to create worklog on '{issue.key}' in {self.base_url}. "
                 f"HTTP {response.status_code}: {response.text}"
             )
+
+    def find_issue_by_number(self, issue_key: str) -> IssueInfo:
+        url = f"{self.base_url}/rest/api/3/issue/{issue_key}"
+
+        try:
+            response = self.session.get(url, timeout=15, verify=self.verify_ssl)
+        except requests.RequestException as e:
+            raise JiraClientError(
+                f"Network error while fetching issue '{issue_key}' from {self.base_url}: {e}"
+            )
+
+        if response.status_code == 404:
+            raise IssueNotFoundError(
+                f"Issue '{issue_key}' not found in {self.base_url}."
+            )
+
+        if response.status_code != 200:
+            raise JiraClientError(
+                f"Failed to fetch issue '{issue_key}' from {self.base_url}. "
+                f"HTTP {response.status_code}: {response.text}"
+            )
+
+        data = response.json()
+
+        key = data["key"]
+        title = data["fields"]["summary"]
+        issue_url = f"{self.base_url}/browse/{key}"
+
+        return IssueInfo(key=key, title=title, url=issue_url)

@@ -22,7 +22,6 @@ def parse_input(
 
     current_date: str | None = None
     current_issue: str | None = None
-    current_employer_only: bool = False
 
     for raw_line in lines:
         line = raw_line.strip()
@@ -61,7 +60,6 @@ def parse_input(
                 issue_map = result[current_date]
 
                 logs, employer_only = issue_map[current_issue]
-
                 logs.append(TimeLogEntry(hours=hours, comment=comment))
 
                 continue
@@ -69,18 +67,15 @@ def parse_input(
             except ValueError:
                 pass
 
-        # Issue line
+        # Issue
         issue_key, employer_only = parse_issue_line(line)
 
         current_issue = issue_key
-        current_employer_only = employer_only
-
         issue_map = result[current_date]
 
         if current_issue not in issue_map:
             issue_map[current_issue] = ([], employer_only)
         else:
-            # merge case → keep employer_only True if ever set
             logs, existing_flag = issue_map[current_issue]
             issue_map[current_issue] = (logs, existing_flag or employer_only)
 
