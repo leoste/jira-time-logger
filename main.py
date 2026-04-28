@@ -1,7 +1,5 @@
 # main.py
 
-from datetime import datetime
-
 from config import (
     ORIGINAL_JIRA_URL,
     ORIGINAL_JIRA_TOKEN,
@@ -17,13 +15,9 @@ from jira_clients import (
     ApiJiraClient,
     JiraClientError,
 )
-from models import PlannedIssueWorklogs, PlannedDayWorklogs
+from models import PlannedDayWorklogs
 from parser import parse_input
-
-
-def to_jira_started(date_str: str) -> str:
-    dt = datetime.strptime(date_str, "%d.%m.%Y")
-    return dt.strftime("%Y-%m-%dT12:00:00.000+0000")
+from planner import WorklogPlanner
 
 
 def read_multiline_input() -> str:
@@ -95,60 +89,10 @@ def main():
         except ValueError as e:
             print(f"\n[PARSE ERROR] {e}\nTry again.\n")
 
-    customer_days: list[PlannedDayWorklogs] = []
-    employer_days: list[PlannedDayWorklogs] = []
+    planner = WorklogPlanner(customer, employer)
 
     try:
-        for date_str, issues in parsed.items():
-            started = to_jira_started(date_str)
-
-            customer_issue_plans = []
-            employer_issue_plans = []
-
-            for issue_key, (time_logs, employer_only) in issues.items():
-
-                # EMPLOYER lookup
-                if employer_only:
-                    employer_issue = employer.find_issue_by_number(issue_key)
-                else:
-                    employer_issue = employer.find_issue_by_name_containing(issue_key)
-
-                employer_issue_plans.append(
-                    PlannedIssueWorklogs(
-                        issue=employer_issue,
-                        time_logs=time_logs,
-                        employer_only=employer_only,
-                    )
-                )
-
-                # CUSTOMER lookup
-                if not employer_only:
-                    customer_issue = customer.find_issue_by_number(issue_key)
-
-                    customer_issue_plans.append(
-                        PlannedIssueWorklogs(
-                            issue=customer_issue,
-                            time_logs=time_logs,
-                            employer_only=False,
-                        )
-                    )
-
-            customer_days.append(
-                PlannedDayWorklogs(
-                    date_str=date_str,
-                    started=started,
-                    issues=customer_issue_plans,
-                )
-            )
-
-            employer_days.append(
-                PlannedDayWorklogs(
-                    date_str=date_str,
-                    started=started,
-                    issues=employer_issue_plans,
-                )
-            )
-
+        customer_days, employer_days = planner.build(parsed)
     except JiraClientError as e:
         print(f"\n[LOOKUP ERROR] {e}")
         return
