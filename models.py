@@ -30,13 +30,10 @@ class PlannedDayWorklogs:
     started: str
     issues: List[PlannedIssueWorklogs]
 
-    def commit(self, client, is_customer: bool) -> None:
+    def commit(self, client) -> None:
         import time
 
         for planned_issue in self.issues:
-            if is_customer and planned_issue.employer_only:
-                continue
-
             for entry in planned_issue.time_logs:
                 client.create_time_log(
                     planned_issue.issue,

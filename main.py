@@ -108,11 +108,11 @@ def main():
     try:
         print("\nCommitting to CUSTOMER JIRA...\n")
         for day in customer_days:
-            day.commit(customer, is_customer=True)
+            day.commit(customer)
 
         print("\nCommitting to EMPLOYER JIRA...\n")
         for day in employer_days:
-            day.commit(employer, is_customer=False)
+            day.commit(employer)
 
     except JiraClientError as e:
         print(f"\n[COMMIT ERROR] {e}")
