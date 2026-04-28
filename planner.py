@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-from jira_clients import JiraClientError
 from models import PlannedDayWorklogs, PlannedIssueWorklogs, TimeLogEntry
 
 
@@ -25,20 +24,20 @@ class WorklogPlanner:
             customer_issue_plans: List[PlannedIssueWorklogs] = []
             employer_issue_plans: List[PlannedIssueWorklogs] = []
 
-            for issue_key, (time_logs, employer_only) in issues.items():
+            for issue_key, (time_logs, is_employer_only) in issues.items():
                 employer_issue = self._resolve_employer_issue(
-                    issue_key, employer_only
+                    issue_key, is_employer_only
                 )
 
                 employer_issue_plans.append(
                     PlannedIssueWorklogs(
                         issue=employer_issue,
                         time_logs=time_logs,
-                        employer_only=employer_only,
+                        employer_only=is_employer_only,
                     )
                 )
 
-                if not employer_only:
+                if self._should_log_to_customer(is_employer_only):
                     customer_issue = self._resolve_customer_issue(issue_key)
 
                     customer_issue_plans.append(
@@ -67,8 +66,11 @@ class WorklogPlanner:
 
         return customer_days, employer_days
 
-    def _resolve_employer_issue(self, issue_key: str, employer_only: bool):
-        if employer_only:
+    def _should_log_to_customer(self, is_employer_only: bool) -> bool:
+        return not is_employer_only
+
+    def _resolve_employer_issue(self, issue_key: str, is_employer_only: bool):
+        if is_employer_only:
             return self.employer.find_issue_by_number(issue_key)
         return self.employer.find_issue_by_name_containing(issue_key)
 
