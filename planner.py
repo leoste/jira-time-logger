@@ -1,9 +1,11 @@
-# planner.py
-
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import List
 
-from models import PlannedDayWorklogs, PlannedIssueWorklogs, TimeLogEntry
+from models import (
+    PlannedDayWorklogs,
+    PlannedIssueWorklogs,
+    ParsedDay,
+)
 
 
 class WorklogPlanner:
@@ -13,44 +15,44 @@ class WorklogPlanner:
 
     def build(
         self,
-        parsed: Dict[str, Dict[str, Tuple[List[TimeLogEntry], bool]]],
+        parsed: List[ParsedDay],
     ) -> tuple[List[PlannedDayWorklogs], List[PlannedDayWorklogs]]:
         customer_days: List[PlannedDayWorklogs] = []
         employer_days: List[PlannedDayWorklogs] = []
 
-        for date_str, issues in parsed.items():
-            started = self._to_jira_started(date_str)
+        for day in parsed:
+            started = self._to_jira_started(day.date_str)
 
             customer_issue_plans: List[PlannedIssueWorklogs] = []
             employer_issue_plans: List[PlannedIssueWorklogs] = []
 
-            for issue_key, (time_logs, is_employer_only) in issues.items():
+            for issue in day.issues:
                 employer_issue = self._resolve_employer_issue(
-                    issue_key, is_employer_only
+                    issue.key, issue.is_employer_only
                 )
 
                 employer_issue_plans.append(
                     PlannedIssueWorklogs(
                         issue=employer_issue,
-                        time_logs=time_logs,
-                        employer_only=is_employer_only,
+                        time_logs=issue.time_logs,
+                        is_employer_only=issue.is_employer_only,
                     )
                 )
 
-                if self._should_log_to_customer(is_employer_only):
-                    customer_issue = self._resolve_customer_issue(issue_key)
+                if self._should_log_to_customer(issue.is_employer_only):
+                    customer_issue = self._resolve_customer_issue(issue.key)
 
                     customer_issue_plans.append(
                         PlannedIssueWorklogs(
                             issue=customer_issue,
-                            time_logs=time_logs,
-                            employer_only=False,
+                            time_logs=issue.time_logs,
+                            is_employer_only=False,
                         )
                     )
 
             customer_days.append(
                 PlannedDayWorklogs(
-                    date_str=date_str,
+                    date_str=day.date_str,
                     started=started,
                     issues=customer_issue_plans,
                 )
@@ -58,7 +60,7 @@ class WorklogPlanner:
 
             employer_days.append(
                 PlannedDayWorklogs(
-                    date_str=date_str,
+                    date_str=day.date_str,
                     started=started,
                     issues=employer_issue_plans,
                 )

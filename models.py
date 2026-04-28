@@ -1,5 +1,3 @@
-# models.py
-
 from dataclasses import dataclass
 from typing import List
 
@@ -18,10 +16,23 @@ class IssueInfo:
 
 
 @dataclass
+class ParsedIssue:
+    key: str
+    time_logs: List[TimeLogEntry]
+    is_employer_only: bool
+
+
+@dataclass
+class ParsedDay:
+    date_str: str
+    issues: List[ParsedIssue]
+
+
+@dataclass
 class PlannedIssueWorklogs:
     issue: IssueInfo
     time_logs: List[TimeLogEntry]
-    employer_only: bool
+    is_employer_only: bool
 
 
 @dataclass

@@ -42,7 +42,7 @@ def print_plans(title: str, days: list[PlannedDayWorklogs], client_url: str) -> 
         print(f"\nDate: {day.date_str}\n")
 
         for plan in day.issues:
-            suffix = " (employer)" if plan.employer_only else ""
+            suffix = " (employer)" if plan.is_employer_only else ""
             print(f"{plan.issue.key}{suffix} - {plan.issue.title}")
             print(f"URL: {plan.issue.url}")
             for entry in plan.time_logs:
