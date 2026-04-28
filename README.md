@@ -34,5 +34,5 @@ NB! the program doesn't check for duplicate commits. If you commit the same thin
 copy-paste config.py.sample into config.py and fill out the details with your Jira tokens.
 
 There are two types of Jira connections: API or PAT, which depends on the Jira version. if you go to get your token in Jira, you will see if it's PAT or API token.
-In my current config sample, employer Jira is API and customer PAT type.
-If necessary, in main.py you can change if APIJiraClient or PatJiraClient is initialized for customer and employer, and provide the necessary values in config.py as well.
+
+In my current config sample, employer Jira is API and customer PAT type. If necessary, in main.py you can change if APIJiraClient or PatJiraClient is initialized for customer and employer, and provide the necessary values in config.py as well.
