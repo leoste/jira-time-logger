@@ -11,18 +11,24 @@ You type out your logs as simple text, then just paste it into the script. The s
 Sample timelog text:
 ```
 27.04.2026
+
 TICKET-43
 2 I worked a lot
 0.5 worked less
+
 TICKET-73
 1 worked on other task as well
 2.5 explanation for long time
+
 28.04.2026
+
 TICKET-73
 3 long morning
 1.5 quick work
+
 TICKET-7
 0.5 looked into it
+
 END
 ```
 
