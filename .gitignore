@@ -1,2 +1,9 @@
+# security
 config.py
+
+# keep repo clean
 __pycache__
+
+# pyinstaller
+build/
+dist/

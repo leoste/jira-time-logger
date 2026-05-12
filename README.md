@@ -36,3 +36,10 @@ copy-paste config.py.sample into config.py and fill out the details with your Ji
 There are two types of Jira connections: API or PAT, which depends on the Jira version. if you go to get your token in Jira, you will see if it's PAT or API token.
 
 In my current config sample, employer Jira is API and customer PAT type. If necessary, in main.py you can change if APIJiraClient or PatJiraClient is initialized for customer and employer, and provide the necessary values in config.py as well.
+
+### Export into exe
+
+If you want to just run an exe file instead of running python script each time, you can export into exe:
+`pyinstaller --onefile main.py`
+or if that doesn't work and you can't be bothered to set up path:
+`python -m pyinstaller --onefile main.py`
