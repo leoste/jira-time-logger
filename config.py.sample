@@ -4,10 +4,11 @@
 ORIGINAL_JIRA_URL = "jira.company.com"
 ORIGINAL_JIRA_TOKEN = ""
 ORIGINAL_JIRA_VERIFY_SSL = False
+ORIGINAL_JIRA_USE_HOUR_SUFFIX = False # Set true if doesn't use Tempo
 
 # Duplicate Jira (Atlassian Cloud, API token + email)
 DUPLICATE_JIRA_URL = "company.atlassian.net"
 DUPLICATE_JIRA_EMAIL = "name@company.com"
 DUPLICATE_JIRA_TOKEN = ""
 DUPLICATE_JIRA_PROJECT_KEY = "ABC"
-DUPLICATE_JIRA_VERIFY_SSL = True
+DUPLICATE_JIRA_VERIFY_SSL = False
