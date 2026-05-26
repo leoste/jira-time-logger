@@ -4,7 +4,6 @@ from config import (
     ORIGINAL_JIRA_URL,
     ORIGINAL_JIRA_TOKEN,
     ORIGINAL_JIRA_VERIFY_SSL,
-    ORIGINAL_JIRA_USE_HOUR_SUFFIX,
     DUPLICATE_JIRA_URL,
     DUPLICATE_JIRA_EMAIL,
     DUPLICATE_JIRA_TOKEN,
@@ -58,7 +57,6 @@ def main():
         base_url=ORIGINAL_JIRA_URL,
         token=ORIGINAL_JIRA_TOKEN,
         verify_ssl=ORIGINAL_JIRA_VERIFY_SSL,
-        use_hour_suffix=ORIGINAL_JIRA_USE_HOUR_SUFFIX,
     )
 
     employer = ApiJiraClient(

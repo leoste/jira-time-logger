@@ -22,11 +22,10 @@ class MultipleIssuesFoundError(JiraClientError):
 
 
 class PatJiraClient:
-    def __init__(self, base_url: str, token: str, verify_ssl: bool = True, use_hour_suffix: bool = False):
+    def __init__(self, base_url: str, token: str, verify_ssl: bool = True):
         self.base_url = base_url.rstrip("/")
         self.token = token
         self.verify_ssl = verify_ssl
-        self.use_hour_suffix = use_hour_suffix
 
         if not self.verify_ssl:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -93,11 +92,9 @@ class PatJiraClient:
     ) -> None:
         url = f"{self.base_url}/rest/api/2/issue/{issue.key}/worklog"
 
-        time_spent = f"{hours}h" if self.use_hour_suffix else f"{hours}"
-
         payload = {
             "comment": comment,
-            "timeSpent": time_spent,
+            "timeSpentSeconds": int(hours * 3600),
         }
 
         if started is not None:
@@ -239,7 +236,7 @@ class ApiJiraClient:
                     }
                 ],
             },
-            "timeSpent": f"{hours}h",
+            "timeSpentSeconds": int(hours * 3600),
         }
 
         if started is not None:

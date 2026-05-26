@@ -80,5 +80,8 @@ class WorklogPlanner:
         return self.customer.find_issue_by_number(issue_key)
 
     def _to_jira_started(self, date_str: str) -> str:
-        dt = datetime.strptime(date_str, "%d.%m.%Y")
-        return dt.strftime("%Y-%m-%dT12:00:00.000+0000")
+        now = datetime.now().astimezone()
+        dt = datetime.strptime(date_str, "%d.%m.%Y").replace(
+            hour=now.hour, minute=now.minute, tzinfo=now.tzinfo
+        )
+        return dt.strftime("%Y-%m-%dT%H:%M:00.000%z")
