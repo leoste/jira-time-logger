@@ -46,7 +46,7 @@ def print_plans(title: str, days: list[PlannedDayWorklogs], client_url: str) -> 
             print(f"{plan.issue.key}{suffix} - {plan.issue.title}")
             print(f"URL: {plan.issue.url}")
             for entry in plan.time_logs:
-                print(f"{entry.hours} - {entry.comment}")
+                print(f"{entry.started[11:16]} | {entry.hours}h | {entry.comment}")
             print()
 
         print("-" * 40)

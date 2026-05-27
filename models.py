@@ -25,20 +25,27 @@ class ParsedIssue:
 @dataclass
 class ParsedDay:
     date_str: str
+    start_time: str
     issues: List[ParsedIssue]
+
+
+@dataclass
+class PlannedTimeLogEntry:
+    hours: float
+    comment: str
+    started: str
 
 
 @dataclass
 class PlannedIssueWorklogs:
     issue: IssueInfo
-    time_logs: List[TimeLogEntry]
+    time_logs: List[PlannedTimeLogEntry]
     is_employer_only: bool
 
 
 @dataclass
 class PlannedDayWorklogs:
     date_str: str
-    started: str
     issues: List[PlannedIssueWorklogs]
 
     def commit(self, client) -> None:
@@ -50,7 +57,7 @@ class PlannedDayWorklogs:
                     planned_issue.issue,
                     entry.hours,
                     entry.comment,
-                    started=self.started,
+                    started=entry.started,
                 )
 
                 print(

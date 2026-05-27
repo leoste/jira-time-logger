@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from models import (
     PlannedDayWorklogs,
     PlannedIssueWorklogs,
+    PlannedTimeLogEntry,
     ParsedDay,
 )
 
@@ -21,31 +22,40 @@ class WorklogPlanner:
         employer_days: List[PlannedDayWorklogs] = []
 
         for day in parsed:
-            started = self._to_jira_started(day.date_str)
-
             customer_issue_plans: List[PlannedIssueWorklogs] = []
             employer_issue_plans: List[PlannedIssueWorklogs] = []
+
+            cumulative_hours = 0.0
 
             for issue in day.issues:
                 employer_issue = self._resolve_employer_issue(
                     issue.key, issue.is_employer_only
                 )
+                customer_issue = (
+                    self._resolve_customer_issue(issue.key)
+                    if self._should_log_to_customer(issue.is_employer_only)
+                    else None
+                )
+
+                planned_logs: List[PlannedTimeLogEntry] = []
+                for tl in issue.time_logs:
+                    started = self._compute_started(day.date_str, day.start_time, cumulative_hours)
+                    planned_logs.append(PlannedTimeLogEntry(hours=tl.hours, comment=tl.comment, started=started))
+                    cumulative_hours += tl.hours
 
                 employer_issue_plans.append(
                     PlannedIssueWorklogs(
                         issue=employer_issue,
-                        time_logs=issue.time_logs,
+                        time_logs=planned_logs,
                         is_employer_only=issue.is_employer_only,
                     )
                 )
 
-                if self._should_log_to_customer(issue.is_employer_only):
-                    customer_issue = self._resolve_customer_issue(issue.key)
-
+                if customer_issue is not None:
                     customer_issue_plans.append(
                         PlannedIssueWorklogs(
                             issue=customer_issue,
-                            time_logs=issue.time_logs,
+                            time_logs=planned_logs,
                             is_employer_only=False,
                         )
                     )
@@ -53,7 +63,6 @@ class WorklogPlanner:
             customer_days.append(
                 PlannedDayWorklogs(
                     date_str=day.date_str,
-                    started=started,
                     issues=customer_issue_plans,
                 )
             )
@@ -61,7 +70,6 @@ class WorklogPlanner:
             employer_days.append(
                 PlannedDayWorklogs(
                     date_str=day.date_str,
-                    started=started,
                     issues=employer_issue_plans,
                 )
             )
@@ -79,9 +87,8 @@ class WorklogPlanner:
     def _resolve_customer_issue(self, issue_key: str):
         return self.customer.find_issue_by_number(issue_key)
 
-    def _to_jira_started(self, date_str: str) -> str:
-        now = datetime.now().astimezone()
-        dt = datetime.strptime(date_str, "%d.%m.%Y").replace(
-            hour=now.hour, minute=now.minute, tzinfo=now.tzinfo
-        )
+    def _compute_started(self, date_str: str, start_time: str, offset_hours: float) -> str:
+        local_tz = datetime.now().astimezone().tzinfo
+        dt = datetime.strptime(f"{date_str} {start_time}", "%d.%m.%Y %H:%M").replace(tzinfo=local_tz)
+        dt = dt + timedelta(hours=offset_hours)
         return dt.strftime("%Y-%m-%dT%H:%M:00.000%z")

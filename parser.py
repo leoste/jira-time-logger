@@ -26,13 +26,21 @@ def parse_input(text: str) -> List[ParsedDay]:
             continue
 
         try:
-            datetime.strptime(line, "%d.%m.%Y")
-
-            current_day = ParsedDay(date_str=line, issues=[])
+            datetime.strptime(line, "%d.%m.%Y %H:%M")
+            date_str, start_time = line.split(" ", 1)
+            current_day = ParsedDay(date_str=date_str, start_time=start_time, issues=[])
             days.append(current_day)
             current_issue = None
             continue
+        except ValueError:
+            pass
 
+        try:
+            datetime.strptime(line, "%d.%m.%Y")
+            current_day = ParsedDay(date_str=line, start_time="12:00", issues=[])
+            days.append(current_day)
+            current_issue = None
+            continue
         except ValueError:
             pass
 
