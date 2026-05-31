@@ -6,11 +6,12 @@ In the duplicate jira, the name of the original ticket is in the name of the dup
 
 ## Usage
 
-You type out your logs as simple text, then just paste it into the script. The script finds all the necessary tickets and after approval from you, the script automatically commits the timelogs.
+You type out your logs as simple text, then just paste it into the script. The script finds all the necessary tickets and after approval from you, the script automatically commits the timelogs. If you add time, that's used to calculate
+times for the worklogs automatically, otherwise default starttime 12:00 is used.
 
 Sample timelog text:
 ```
-27.04.2026
+27.04.2026 10:00
 
 TICKET-43
 2 I worked a lot
@@ -20,7 +21,7 @@ TICKET-73
 1 worked on other task as well
 2.5 explanation for long time
 
-28.04.2026
+28.04.2026 08:00
 
 TICKET-73
 3 long morning
@@ -46,6 +47,6 @@ In my current config sample, employer Jira is API and customer PAT type. If nece
 ### Export into exe
 
 If you want to just run an exe file instead of running python script each time, you can export into exe:
-`pyinstaller --onefile main.py`
+`PyInstaller --onefile main.py`
 or if that doesn't work and you can't be bothered to set up path:
-`python -m pyinstaller --onefile main.py`
+`python -m PyInstaller --onefile main.py`
