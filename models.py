@@ -20,6 +20,7 @@ class ParsedIssue:
     key: str
     time_logs: List[TimeLogEntry]
     is_employer_only: bool
+    is_client_only: bool
 
 
 @dataclass
@@ -41,6 +42,7 @@ class PlannedIssueWorklogs:
     issue: IssueInfo
     time_logs: List[PlannedTimeLogEntry]
     is_employer_only: bool
+    is_client_only: bool
 
 
 @dataclass

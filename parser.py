@@ -4,11 +4,14 @@ from typing import List
 from models import TimeLogEntry, ParsedDay, ParsedIssue
 
 
-def parse_issue_line(line: str) -> tuple[str, bool]:
+def parse_issue_line(line: str) -> tuple[str, bool, bool]:
     if line.endswith("(employer)"):
         issue = line[: -len("(employer)")].strip()
-        return issue, True
-    return line, False
+        return issue, True, False
+    if line.endswith("(client)"):
+        issue = line[: -len("(client)")].strip()
+        return issue, False, True
+    return line, False, False
 
 
 def parse_input(text: str) -> List[ParsedDay]:
@@ -67,13 +70,18 @@ def parse_input(text: str) -> List[ParsedDay]:
             except ValueError:
                 pass
 
-        issue_key, is_employer_only = parse_issue_line(line)
+        issue_key, is_employer_only, is_client_only = parse_issue_line(line)
 
         for issue in current_day.issues:
             if issue.key == issue_key:
-                issue.is_employer_only = (
-                    issue.is_employer_only or is_employer_only
-                )
+                merged_employer_only = issue.is_employer_only or is_employer_only
+                merged_client_only = issue.is_client_only or is_client_only
+                if merged_employer_only and merged_client_only:
+                    raise ValueError(
+                        f"Issue '{issue_key}' is marked both (employer) and (client)."
+                    )
+                issue.is_employer_only = merged_employer_only
+                issue.is_client_only = merged_client_only
                 current_issue = issue
                 break
         else:
@@ -81,6 +89,7 @@ def parse_input(text: str) -> List[ParsedDay]:
                 key=issue_key,
                 time_logs=[],
                 is_employer_only=is_employer_only,
+                is_client_only=is_client_only,
             )
             current_day.issues.append(new_issue)
             current_issue = new_issue

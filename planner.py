@@ -28,8 +28,10 @@ class WorklogPlanner:
             cumulative_hours = 0.0
 
             for issue in day.issues:
-                employer_issue = self._resolve_employer_issue(
-                    issue.key, issue.is_employer_only
+                employer_issue = (
+                    self._resolve_employer_issue(issue.key, issue.is_employer_only)
+                    if self._should_log_to_employer(issue.is_client_only)
+                    else None
                 )
                 customer_issue = (
                     self._resolve_customer_issue(issue.key)
@@ -43,13 +45,15 @@ class WorklogPlanner:
                     planned_logs.append(PlannedTimeLogEntry(hours=tl.hours, comment=tl.comment, started=started))
                     cumulative_hours += tl.hours
 
-                employer_issue_plans.append(
-                    PlannedIssueWorklogs(
-                        issue=employer_issue,
-                        time_logs=planned_logs,
-                        is_employer_only=issue.is_employer_only,
+                if employer_issue is not None:
+                    employer_issue_plans.append(
+                        PlannedIssueWorklogs(
+                            issue=employer_issue,
+                            time_logs=planned_logs,
+                            is_employer_only=issue.is_employer_only,
+                            is_client_only=False,
+                        )
                     )
-                )
 
                 if customer_issue is not None:
                     customer_issue_plans.append(
@@ -57,6 +61,7 @@ class WorklogPlanner:
                             issue=customer_issue,
                             time_logs=planned_logs,
                             is_employer_only=False,
+                            is_client_only=issue.is_client_only,
                         )
                     )
 
@@ -78,6 +83,9 @@ class WorklogPlanner:
 
     def _should_log_to_customer(self, is_employer_only: bool) -> bool:
         return not is_employer_only
+
+    def _should_log_to_employer(self, is_client_only: bool) -> bool:
+        return not is_client_only
 
     def _resolve_employer_issue(self, issue_key: str, is_employer_only: bool):
         if is_employer_only:

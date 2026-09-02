@@ -36,6 +36,8 @@ END
 If any issue can't be found, Jira can't be connected to, or text can't be parsed, program will abort, giving you some safeguard.
 NB! the program doesn't check for duplicate commits. If you commit the same thing twice, that's on you.
 
+You can suffix a ticket line with `(employer)` to log only to the employer Jira, or with `(client)` to log only to the customer Jira.
+
 ## Setup
 
 copy-paste config.py.sample into config.py and fill out the details with your Jira tokens.
